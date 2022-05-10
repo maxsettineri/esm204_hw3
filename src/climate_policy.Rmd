@@ -12,6 +12,7 @@ library(tidyverse)
 library(broom)
 library(janitor)
 library(rootSolve)
+library(equatiomatic)
 ```
 
 ```{r}
@@ -54,11 +55,47 @@ demand_agg <- function(p){
 
 ```{r}
 price = seq(0, 30, length.out = 100)
-Qagg <- map(price, demand_agg) %>% unlist()
+Qagg <- map(price, demand_agg) %>% unlist() %>% 
+  unlist()
+agg_df<- tibble(Qagg = Qagg, price = price)
+demand_agg_eq <- lm(price ~ Qagg, data = agg_df) 
+extract_eq(model = demand_agg_eq, use_coefs = TRUE, coef_digits = 5)
+# SWITCH Q ON ONE SIDE OF EQUATION
+agg_slope <- demand_agg_eq$coefficients[2]
+agg_int <- demand_agg_eq$coefficients[1]
+agg_slope
+agg_int
+# AGG DEMAND FUNCTION is P = 29.8 - 0.00004(Qagg)
 ```
 
 ```{r}
 df<- tibble(Qagg = Qagg, price = price)
+```
+
+```{r}
+  #THIS IS LUCAS'S CODE
+# creating a table for demand based on the linear model
+mc <- function(p){
+  mc <- p*(demand_agg(10)/10)
+  return(mc)
+}
+price_vector <- c(0:35)
+table <- data.frame(price_vector)
+demand_table <- table %>% 
+  mutate(demand_low = demand(price_vector, model = model_demand_l)) %>% 
+  mutate(demand_high = demand(price_vector, model = model_demand_h)) %>% 
+  mutate(demand_agg = demand_agg(price_vector)) %>% 
+  rename(price_cents = price_vector) %>% 
+  mutate(marginal_cost = mc(price_cents)) # marginal cost to produce
+demand_table_longer <- demand_table %>% 
+  pivot_longer(2:5, names_to = "demand_level", values_to = "demand")
+# plotting supply and demand
+ggplot(data = demand_table_longer, aes(x = demand, y = price_cents, color = demand_level)) +
+  geom_line(size = 1) +
+  theme_minimal(14) +
+  scale_color_manual(values = c("firebrick", "cyan4", "forestgreen", "black")) +
+  scale_x_continuous(limits = c(0, 9e+05)) +
+  theme(legend.position = c(0.8, 0.7))
 ```
 
 ```{r}
@@ -130,30 +167,3 @@ consumer_surplus_diff
 ```
 
 
-######### END OF SANDY'S CODE HERE ##########
-
-```{r}
-  #THIS IS LUCAS'S CODE
-# creating a table for demand based on the linear model
-mc <- function(p){
-  mc <- p*(demand_agg(10)/10)
-  return(mc)
-}
-price_vector <- c(0:35)
-table <- data.frame(price_vector)
-demand_table <- table %>% 
-  mutate(demand_low = demand(price_vector, model = model_demand_l)) %>% 
-  mutate(demand_high = demand(price_vector, model = model_demand_h)) %>% 
-  mutate(demand_agg = demand_agg(price_vector)) %>% 
-  rename(price_cents = price_vector) %>% 
-  mutate(marginal_cost = mc(price_cents)) # marginal cost to produce
-demand_table_longer <- demand_table %>% 
-  pivot_longer(2:5, names_to = "demand_level", values_to = "demand")
-# plotting supply and demand
-ggplot(data = demand_table_longer, aes(x = demand, y = price_cents, color = demand_level)) +
-  geom_line(size = 1) +
-  theme_minimal(14) +
-  scale_color_manual(values = c("firebrick", "cyan4", "forestgreen", "black")) +
-  scale_x_continuous(limits = c(0, 9e+05)) +
-  theme(legend.position = c(0.8, 0.7))
-```
