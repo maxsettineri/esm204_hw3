@@ -73,6 +73,15 @@ df<- tibble(Qagg = Qagg, price = price)
 ```
 
 ```{r}
+# calculating MPC
+Qo_kWh <- demand_agg(10)
+supply_slope <- 10/Qo_kWh
+Qo_kWh
+supply_slope
+```
+
+
+```{r}
   #THIS IS LUCAS'S CODE
 # creating a table for demand based on the linear model
 mc <- function(p){
